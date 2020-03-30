@@ -273,4 +273,4 @@ ts.addEventListener('recognized', ({ result }) => {
 
 # License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](https://github.com/AndBoh/transpeech/blob/master/LICENSE.md).

@@ -1,6 +1,6 @@
 {
   "name": "transpeech",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TranSpeech is a small voice and text library. It allows you to recognize and synthesize speech using a browser, and translate text.",
   "main": "index.js",
   "repository": {

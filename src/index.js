@@ -373,4 +373,4 @@ class TranSpeech extends EventTarget {
   }
 }
 
-module.exports = TranSpeech;
+export default TranSpeech;

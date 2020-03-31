@@ -1,8 +1,11 @@
 {
   "name": "transpeech",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "TranSpeech is a small voice and text library. It allows you to recognize and synthesize speech using a browser, and translate text.",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "webpack --mode production"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AndBoh/transpeech.git"
@@ -17,5 +20,11 @@
   ],
   "author": "Andrey Bokhan <andrbokhan@gmail.com>",
   "license": "MIT",
-  "homepage": "https://github.com/AndBoh/transpeech#readme"
+  "homepage": "https://github.com/AndBoh/transpeech#readme",
+  "devDependencies": {
+    "@babel/core": "^7.9.0",
+    "babel-loader": "^8.1.0",
+    "webpack": "^4.42.1",
+    "webpack-cli": "^3.3.11"
+  }
 }

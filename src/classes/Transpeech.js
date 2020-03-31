@@ -2,7 +2,6 @@
 /* eslint-disable no-restricted-globals */
 /* eslint-disable no-undef */
 /* eslint-disable no-unused-expressions */
-import EventTarget from 'events';
 import Voice from './Voice';
 import PermissionStatusesModel from '../models/PermissionStatuses';
 import ErrorsModel from '../models/Errors';

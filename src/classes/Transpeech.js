@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 /* eslint-disable consistent-return */
 /* eslint-disable no-restricted-globals */
 /* eslint-disable no-undef */
@@ -160,7 +161,7 @@ class TranSpeech extends EventTarget {
     return this.permissionStatus;
   }
 
-  static throw(error) {
+  throw(error) {
     const errorTypeName = Object.entries(ErrorTypesModel)
       .find(([, errType]) => errType === error.type)[0];
 
@@ -262,7 +263,6 @@ class TranSpeech extends EventTarget {
     }
 
     if (this.isRecognitionActive) {
-      this.throw(ErrorsModel.RECOGNITION_ACTIVE);
       return false;
     }
 

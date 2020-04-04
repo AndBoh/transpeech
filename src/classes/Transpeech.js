@@ -1,4 +1,3 @@
-/* eslint-disable class-methods-use-this */
 /* eslint-disable consistent-return */
 /* eslint-disable no-restricted-globals */
 /* eslint-disable no-undef */
@@ -38,7 +37,7 @@ class TranSpeech extends EventTarget {
     this.ready = this.detectFeatures();
 
     if (!this.ready) {
-      this.throw(ErrorsModel.INSTANCE_NOT_CREATED);
+      TranSpeech.throw(ErrorsModel.INSTANCE_NOT_CREATED);
       return undefined;
     }
 
@@ -63,27 +62,27 @@ class TranSpeech extends EventTarget {
     const permissionsFeature = self.navigator.permissions;
 
     if (!recognitionFeature) {
-      this.throw(ErrorsModel.NOT_SUPPORT_RECOGNIRION);
+      TranSpeech.throw(ErrorsModel.NOT_SUPPORT_RECOGNIRION);
       return false;
     }
 
     if (!fetchFeatue) {
-      this.throw(ErrorsModel.NOT_SUPPORT_FETCH);
+      TranSpeech.throw(ErrorsModel.NOT_SUPPORT_FETCH);
       return false;
     }
 
     if (!syntesisFeature || !syntesisFeature.getVoices) {
-      this.throw(ErrorsModel.NOT_SUPPORT_SYNTESIS);
+      TranSpeech.throw(ErrorsModel.NOT_SUPPORT_SYNTESIS);
       return false;
     }
 
     if (!mediaDevicesFeature) {
-      this.throw(ErrorsModel.NOT_SUPPORT_MEDIA);
+      TranSpeech.throw(ErrorsModel.NOT_SUPPORT_MEDIA);
       return false;
     }
 
     if (!permissionsFeature) {
-      this.throw(ErrorsModel.NOT_SUPPORT_PERMISSIONS);
+      TranSpeech.throw(ErrorsModel.NOT_SUPPORT_PERMISSIONS);
       return false;
     }
 
@@ -127,13 +126,13 @@ class TranSpeech extends EventTarget {
     });
   }
 
-  requestPermission() {
+  requestPermission(request = DEFAULTS.getUserMediaOptions) {
     return new Promise((resolve, reject) => {
       if (!this.ready) {
         return false;
       }
 
-      this.mediaDevices.getUserMedia(DEFAULTS.getUserMediaOptions)
+      this.mediaDevices.getUserMedia(request)
         .then((mediaStream) => {
           this.mediaStream = mediaStream;
           this.getPermissionStatus()
@@ -144,24 +143,24 @@ class TranSpeech extends EventTarget {
         .catch((e) => {
           this.getPermissionStatus()
             .then(() => {
-              this.throw(ErrorsModel.PERMISSION_DECLINED);
+              TranSpeech.throw(ErrorsModel.PERMISSION_DECLINED);
               reject(e);
             });
         });
     });
   }
 
-  async getPermissionStatus() {
+  async getPermissionStatus(query = DEFAULTS.permissionsQueryOptions) {
     if (!this.ready) {
       return false;
     }
 
-    const permission = await this.permissions.query(DEFAULTS.permissionsQueryOptions);
+    const permission = await this.permissions.query(query);
     this.permissionStatus = permission.state;
     return this.permissionStatus;
   }
 
-  throw(error) {
+  static throw(error) {
     const errorTypeName = Object.entries(ErrorTypesModel)
       .find(([, errType]) => errType === error.type)[0];
 
@@ -196,9 +195,9 @@ class TranSpeech extends EventTarget {
     }
 
     if (!voice) {
-      this.throw(ErrorsModel.WRONG_VOICE);
+      TranSpeech.throw(ErrorsModel.WRONG_VOICE);
       if (!navigator.onLine) {
-        this.throw(ErrorsModel.DUE_TO_OFFLINE);
+        TranSpeech.throw(ErrorsModel.DUE_TO_OFFLINE);
       }
       return false;
     }
@@ -222,8 +221,8 @@ class TranSpeech extends EventTarget {
     }
 
     if (!navigator.onLine) {
-      this.throw(ErrorsModel.TRANSLATION_UNAVAILABLE);
-      this.throw(ErrorsModel.DUE_TO_OFFLINE);
+      TranSpeech.throw(ErrorsModel.TRANSLATION_UNAVAILABLE);
+      TranSpeech.throw(ErrorsModel.DUE_TO_OFFLINE);
       return flase;
     }
 
@@ -242,11 +241,17 @@ class TranSpeech extends EventTarget {
     const response = await this.fetch(url);
 
     if (!response.ok) {
-      this.throw(ErrorsModel.TRANSLATION_ERROR);
+      TranSpeech.throw(ErrorsModel.TRANSLATION_ERROR);
       return false;
     }
 
     let translatedText = await response.json();
+
+    if (!translatedText[0]) {
+      TranSpeech.throw(ErrorsModel.NOTHING_TO_TRANSLATE);
+      return false;
+    }
+
     // eslint-disable-next-line prefer-destructuring
     translatedText = translatedText[0][0][0];
     return translatedText;
@@ -258,7 +263,7 @@ class TranSpeech extends EventTarget {
     }
 
     if (!PERMISSIONS_TO_START.includes(this.permissionStatus)) {
-      this.throw(ErrorsModel.PERMISSION_DECLINED);
+      TranSpeech.throw(ErrorsModel.PERMISSION_DECLINED);
       return false;
     }
 

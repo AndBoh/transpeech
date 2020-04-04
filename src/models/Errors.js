@@ -60,4 +60,9 @@ export default {
     type: ErrorTypesModel.WARN,
     message: 'Recognition already active.',
   },
+
+  NOTHING_TO_TRANSLATE: {
+    type: ErrorTypesModel.WARN,
+    message: 'Nothing to translate.',
+  },
 };

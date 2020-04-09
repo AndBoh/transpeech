@@ -5,10 +5,12 @@
 import Voice from './Voice';
 import PermissionStatusesModel from '../models/PermissionStatuses';
 import ErrorsModel from '../models/Errors';
+import ErrorTypesModel from '../models/ErrorTypes';
 
 const DEFAULTS = {
   RECOGNITION_LANG: 'ru',
   CONTINUOUS: true,
+  INTERIM_RESULTS: true,
   getUserMediaOptions: {
     audio: true,
   },
@@ -42,6 +44,7 @@ class TranSpeech extends EventTarget {
     }
 
     this.recognizer.continuous = DEFAULTS.CONTINUOUS;
+    this.recognizer.interimResults = DEFAULTS.INTERIM_RESULTS;
     this.recognizer.lang = DEFAULTS.RECOGNITION_LANG;
 
     this.recognizer.onresult = (event) => {

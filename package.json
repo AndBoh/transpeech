@@ -1,10 +1,12 @@
 {
   "name": "transpeech",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TranSpeech is a small voice and text library. It allows you to recognize and synthesize speech using a browser, and translate text.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist/**/*"],
+  "files": [
+    "dist/**/*"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AndBoh/transpeech.git"
@@ -14,8 +16,8 @@
     "dev": "webpack --watch",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "tslint -p tsconfig.json",
-    "prepare" : "npm run build",
-    "prepublishOnly" : "npm run lint",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run lint",
     "preversion": "npm run lint",
     "version": "npm run format && git add -A src",
     "postversion": "git push && git push --tags"

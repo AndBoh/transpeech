@@ -14,6 +14,8 @@ TranSpeech uses modern browser api in its work and may have compatibility proble
 
 The library also uses the free version of Google Translate API, which allows you to translate only small passages of text, such as sentences. If you need more functionality, in accordance with the MIT license, you can change the library code to fit your needs.
 
+**Starting from version 1.0.0, you can get a list of supported features before creating an instance using the static property ```availableFeatures```. If the field of the received object is not negative, the browser supports this functionality.**
+
 ## Install
 ```
 npm install --save transpeech
@@ -21,41 +23,20 @@ npm install --save transpeech
 
 ## Usage
 
-First you need to import the library into your script and create a TranSpeech instance.
+First you need to import the library into your script.
 
 ```js
 import TranSpeech from 'transpeech';
-
-const ts = new TranSpeech();
 ```
+Then you need to create an instance of the class. You can pass an object with the necessary functionality to the constructor. The object is similar to the object returned by the ```availableFeatures``` method.
 
-During the launch of the constructor, the presence of all necessary APIs in the browser is checked. You can find out the result of the check using the flag:
-
+For example, if the browser does not support speech recognition, you can use the following code:
 ```js
-if (ts.ready) {...}
+const ts = new TranSpeech({ recognition: false });
 ```
+If the settings object is not passed, all features will be requested.
 
-Also, in case of problems, you will see an error in the console.
-
-Then, as early as possible in your code, call the method
-
-```js
-ts.init();
-```
-
-It will perform the necessary preparatory operations. It returns a promise, so if you want to immediately call other methods of the class, do it in the handler ```.then();```
-
-```js
-import TranSpeech from 'transpeech';
-
-const ts = new TranSpeech();
-
-if (ts.ready) {
-  ts.init().then(() => {
-  // your code here
-});
-}
-```
+You can also pass the parameter ```silent```. If it is positive, all messages to the browser console will be disabled.
 
 ## API
 
@@ -63,7 +44,7 @@ if (ts.ready) {
 
 #### ready
 
-It is ```true``` if the class constructor completed successfully, and an instance is ready for use and ```false``` otherwise.
+It is ```true``` if the class constructor completed successfully, and an instance is ready for use.
 
 ```js
 if (ts.ready) {
@@ -94,7 +75,7 @@ Boolean offline // True if this voice available offline
 ```js
 console.log(ts.voices[0]);
 
-// Voice {
+// {
 //   id: 0
 //   name: "Microsoft David Desktop - English (United States)"
 //   lang: "en-US"
@@ -109,7 +90,7 @@ Returns a voice object that is selected as ative.
 ```js
 console.log(ts.activeVoice); 
 
-// Voice {
+// {
 //   id: 5
 //   name: "Google UK English Female"
 //   lang: "en-GB"
@@ -119,7 +100,7 @@ console.log(ts.activeVoice);
 
 #### isRecognitionActive
 
-```true``` if recognition is active and ```false``` otherwise.
+```true``` if recognition is active right now and ```false``` otherwise.
 
 ```js
 if (ts.isRecognitionActive) {
@@ -127,16 +108,24 @@ if (ts.isRecognitionActive) {
 }
 ```
 
+#### recognitionLang
+
+Used to get and set the language of recognized speech.
+
+```js
+ts.recognitionLang = 'en';
+```
+
 ### Methods
 
 #### requestPermission()
 
 ##### Parameters
-```js
-none
+```
+MediaStreamConstraints request
 ```
 
-Asks the user for permission to access the microphone. Returns the promise that is resolved to the [MediaStream](https://developer.mozilla.org/en-US/docs/Web/API/MediaStream) object, if the user gives permission.
+Asks the user for permission to access the microphone (by default) or other device. Can be used without params. Returns the promise that is resolved to the [MediaStream](https://developer.mozilla.org/en-US/docs/Web/API/MediaStream) object, if the user gives permission.
 
 ```js
 ts.requestPermission().then((mediaStream) => {
@@ -159,7 +148,7 @@ Sets the voice object as active. It can accept an ID (Number), a language code o
 ts.setActiveVoice('gb');
 console.log(ts.activeVoice);
 
-// Voice {
+// {
 //   id: 5
 //   name: "Google UK English Female"
 //   lang: "en-GB"
@@ -201,20 +190,6 @@ ts.translate('Hello', 'es').then(result => {
 // Hola
 ```
 
-#### setRecognitionLang(lang)
-
-##### Parameters
-
-```js
-String lang // Lang code
-```
-
-Sets the language to be recognized.
-
-```js
-st.setRecognitionLang('es'); // Sets Spanish
-```
-
 #### startRecognition()
 
 ##### Parameters
@@ -247,22 +222,60 @@ console.log(isRecognitionActive); // false
 
 ### Events
 
-#### partly-recognized
-
-Fires when a sentence is partially recognized. Returns event with a result field.
+Import the event list as follows.
 
 ```js
-ts.addEventListener('partly-recognized', ({ result }) => {
+import { Events } from 'transpeech';
+```
+
+#### VoicesReady
+
+The constructor receives available voices asynchronously. The event fires when voices are received.
+
+```js
+ts.on(Events.VoicesReady, () => {
+  console.log(ts.voices[0]);
+});
+```
+
+#### PermissionStatusReady
+
+Event fires when browser permissions are received.
+
+```js
+ts.on(Events.PermissionStatusReady, () => {
+  console.log(ts.permissionStatus);
+});
+```
+
+#### Ready
+
+Event fires when everything is prepared and the instance is fully ready for use.
+
+```js
+const ts = new TranSpeech();
+
+ts.on(Events.Ready, () => {
+  // Any code here
+});
+```
+
+#### PartlyRecognized
+
+Fires when a sentence is partially recognized.
+
+```js
+ts.on(Events.PartlyRecognized, (result) => {
   console.log(result);
 });
 ```
 
-#### recognized
+#### FullyRecognized
 
-Fires when a sentence is fully recognized. Returns event with a result field.
+Fires when a sentence is fully recognized.
 
 ```js
-ts.addEventListener('recognized', ({ result }) => {
+ts.on(Events.FullyRecognized, ({ result }) => {
   console.log(result);
 });
 ```

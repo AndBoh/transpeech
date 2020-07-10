@@ -275,7 +275,7 @@ ts.on(Events.PartlyRecognized, (result) => {
 Fires when a sentence is fully recognized.
 
 ```js
-ts.on(Events.FullyRecognized, ({ result }) => {
+ts.on(Events.FullyRecognized, (result) => {
   console.log(result);
 });
 ```

@@ -1,8 +1,0 @@
-{
-  "parserOptions": {
-    "parser": "babel-eslint",
-    "sourceType": "module",
-    "allowImportExportEverywhere": false
-},
-  "extends": ["airbnb-base"]
-}

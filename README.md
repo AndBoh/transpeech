@@ -83,8 +83,8 @@ console.log(ts.permissionStatus); // 'prompt'
 
 Contains an array of available voices for the Speech Synthesis API. Each voice object contains the following fields:
 ```js
-Number id // Languade ID
-String name // Languade name
+Number id // Voice ID
+String name // Voice name
 String lang // Languade code
 Boolean offline // True if this voice available offline
 ```

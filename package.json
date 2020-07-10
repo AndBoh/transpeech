@@ -1,14 +1,24 @@
 {
   "name": "transpeech",
-  "version": "0.1.7",
+  "version": "1.0.0",
   "description": "TranSpeech is a small voice and text library. It allows you to recognize and synthesize speech using a browser, and translate text.",
   "main": "dist/index.js",
-  "scripts": {
-    "build": "webpack --mode production"
-  },
+  "types": "dist/index.d.ts",
+  "files": ["dist/**/*"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AndBoh/transpeech.git"
+  },
+  "scripts": {
+    "build": "webpack",
+    "dev": "webpack --watch",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "tslint -p tsconfig.json",
+    "prepare" : "npm run build",
+    "prepublishOnly" : "npm run lint",
+    "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags"
   },
   "keywords": [
     "speech",
@@ -22,13 +32,12 @@
   "license": "MIT",
   "homepage": "https://github.com/AndBoh/transpeech#readme",
   "devDependencies": {
-    "@babel/core": "^7.9.0",
-    "babel-eslint": "^10.1.0",
-    "babel-loader": "^8.1.0",
-    "eslint": "^6.8.0",
-    "eslint-config-airbnb-base": "^14.1.0",
-    "eslint-plugin-import": "^2.20.2",
-    "webpack": "^4.42.1",
-    "webpack-cli": "^3.3.11"
+    "prettier": "^2.0.5",
+    "ts-loader": "^8.0.0",
+    "tslint": "^6.1.2",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.9.6",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.12"
   }
 }

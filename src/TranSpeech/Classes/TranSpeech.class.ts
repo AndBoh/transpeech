@@ -37,14 +37,14 @@ class TranSpeech implements ITranSpeech {
   private eventTarget: EventTarget;
   private mediaStream: MediaStream;
 
-  constructor(features?: AvailableFeatures & { silent: boolean }){
+  constructor(features?: AvailableFeatures & { silent: boolean }) {
     this.eventTarget = new EventTarget();
     this.isRecognitionActive = false;
 
     features = {
       ...defaultFeatures,
       ...features,
-    }
+    };
 
     this.silent = features.silent;
 
@@ -99,19 +99,19 @@ class TranSpeech implements ITranSpeech {
             .catch(() => {
               this.throw(Errors.NotSupportPermissions);
               reject();
-            })
+            });
         } else {
           resolve();
         }
-      })
+      }),
     ])
-    .then(() => {
-      this.dispatch(Events.Ready);
-    })
-    .catch(() => {
-      this.throw(Errors.InstanceNotCreated);
-      return undefined;
-    });
+      .then(() => {
+        this.dispatch(Events.Ready);
+      })
+      .catch(() => {
+        this.throw(Errors.InstanceNotCreated);
+        return undefined;
+      });
   }
 
   private dispatch(event: Events, result?: any): void {
@@ -133,7 +133,7 @@ class TranSpeech implements ITranSpeech {
 
     if (features.translation) {
       if (availableFeatures.translation) {
-        this.fetch = (self.fetch as () => Promise<Response>).bind(self)
+        this.fetch = (self.fetch as () => Promise<Response>).bind(self);
       } else {
         this.throw(Errors.NotSupportFetch);
         return false;
@@ -166,9 +166,9 @@ class TranSpeech implements ITranSpeech {
   public static get availableFeatures(): AvailableFeatures {
     return {
       recognition: !!(
-        (self.speechRecognition || self.webkitSpeechRecognition)
-        && self.navigator?.mediaDevices
-        && self.navigator?.permissions
+        (self.speechRecognition || self.webkitSpeechRecognition) &&
+        self.navigator?.mediaDevices &&
+        self.navigator?.permissions
       ),
       translation: !!self.fetch,
       synthesis: !!self.speechSynthesis,
@@ -313,7 +313,6 @@ class TranSpeech implements ITranSpeech {
     } catch (error) {
       this.throw(Errors.RecognitionActive);
     }
-    
   }
 
   public stopRecognition(): void {

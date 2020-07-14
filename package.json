@@ -20,7 +20,10 @@
     "prepublishOnly": "npm run lint",
     "preversion": "npm run lint",
     "version": "npm run format && git add -A src",
-    "postversion": "git push && git push --tags"
+    "postversion": "git push && git push --tags",
+    "test:build": "webpack --config ./test/test.webpack.config.js",
+    "test:run": "http-server ./test -p 8085",
+    "test": "npm run test:build && npm run test:run"
   },
   "keywords": [
     "speech",
@@ -34,6 +37,9 @@
   "license": "MIT",
   "homepage": "https://github.com/AndBoh/transpeech#readme",
   "devDependencies": {
+    "@babel/core": "^7.10.4",
+    "babel-loader": "^8.1.0",
+    "http-server": "^0.12.3",
     "prettier": "^2.0.5",
     "ts-loader": "^8.0.0",
     "tslint": "^6.1.2",

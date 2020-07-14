@@ -1,9 +1,7 @@
 type AvailableFeatures = {
-  recognition?: SpeechRecognition | boolean;
-  fetch?: (url: RequestInfo) => Promise<Response> | boolean;
-  synthesis?: SpeechSynthesis | boolean;
-  mediaDevices?: MediaDevices | boolean;
-  permissions?: Permissions | boolean;
+  recognition?: boolean;
+  synthesis?: boolean;
+  translation?: boolean;
 };
 
 export default AvailableFeatures;

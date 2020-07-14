@@ -4,6 +4,7 @@ import Errors from '../../Errors/Models/Errors.model';
 import Events from '../../Events/Types/Events.type';
 import RuntimeEvent from '../../Events/Classes/RuntimeEvent.class';
 import Voice from './../../Voice/classes/Voice.class';
+import RuntimeError from './../../Errors/Classes/RuntimeError.class';
 
 import {
   defaultFeatures,
@@ -36,80 +37,82 @@ class TranSpeech implements ITranSpeech {
   private eventTarget: EventTarget;
   private mediaStream: MediaStream;
 
-  constructor(silent?: boolean);
-  constructor(features?: AvailableFeatures, silent?: boolean);
-  constructor(param1?: any, param2?: any) {
+  constructor(features?: AvailableFeatures & { silent: boolean }){
     this.eventTarget = new EventTarget();
     this.isRecognitionActive = false;
 
-    let features: AvailableFeatures;
-
-    if (typeof param1 !== 'undefined' && typeof param2 !== 'undefined') {
-      features = defaultFeatures;
-      this.silent = false;
-    } else if (typeof param2 !== 'undefined') {
-      features = { ...defaultFeatures, ...param1 };
-      this.silent = param2;
-    } else if (typeof param1 === 'boolean') {
-      features = defaultFeatures;
-      this.silent = param1;
-    } else {
-      features = { ...defaultFeatures, ...param1 };
-      this.silent = false;
+    features = {
+      ...defaultFeatures,
+      ...features,
     }
+
+    this.silent = features.silent;
 
     this.ready = this.detectFeatures(features);
 
     if (!this.ready) {
-      if (!this.silent) {
-        Errors.InstanceNotCreated.throw();
-      }
+      this.throw(Errors.InstanceNotCreated);
       return undefined;
     }
 
-    this.recognizer = { ...this.recognizer, ...recognizerDefaults };
+    if (features.recognition) {
+      this.recognizer = { 
+        ...this.recognizer,
+        ...recognizerDefaults,
+      };
+
+      this.recognizer.onresult = (event) => {
+        const result = event.results[event.resultIndex];
+        if (result.isFinal) {
+          this.fullyRecognized(result[0].transcript);
+        } else {
+          this.partlyRecognized(result[0].transcript);
+        }
+      };
+    }
 
     Promise.all([
-      this.getVoices()
-        .then((voices) => {
-          this.voices = voices;
-          this.activeVoice = voices[0];
-          this.dispatch(Events.VoicesReady);
-        })
-        .catch(() => {
-          if (features.synthesis) {
-            if (!this.silent) {
-              Errors.UnableGetVoices.throw();
-              Errors.InstanceNotCreated.throw();
-            }
-            return undefined;
-          }
-        }),
-      this.getPermissionStatus()
-        .then((permissionStatus) => {
-          this.permissionStatus = permissionStatus.state;
-          this.dispatch(Events.PermissionStatusReady);
-        })
-        .catch(() => {
-          if (!this.silent) {
-            Errors.NotSupportPermissions.throw();
-            Errors.InstanceNotCreated.throw();
-          }
-          return undefined;
-        }),
-    ]).then(() => {
-      this.dispatch(Events.Ready);
+      new Promise((resolve, reject) => {
+        if (features.synthesis) {
+          this.getVoices()
+            .then((voices) => {
+              this.voices = voices;
+              this.activeVoice = voices[0];
+              this.dispatch(Events.VoicesReady);
+              resolve();
+            })
+            .catch(() => {
+              this.throw(Errors.UnableGetVoices);
+              reject();
+            });
+        } else {
+          resolve();
+        }
+      }),
+      new Promise((resolve, reject) => {
+        if (features.recognition) {
+          this.getPermissionStatus()
+            .then((permissionStatus) => {
+              this.permissionStatus = permissionStatus.state;
+              this.dispatch(Events.PermissionStatusReady);
+            })
+            .catch(() => {
+              this.throw(Errors.NotSupportPermissions);
+              reject();
+            })
+        } else {
+          resolve();
+        }
+      })
+    ])
+    .then(() => {
+      this.dispatch(Events.Ready)
+    })
+    .catch(() => {
+      this.throw(Errors.InstanceNotCreated);
+      return undefined;
     });
-
-    this.recognizer.onresult = (event) => {
-      const result = event.results[event.resultIndex];
-      if (result.isFinal) {
-        this.fullyRecognized(result[0].transcript);
-      } else {
-        this.partlyRecognized(result[0].transcript);
-      }
-    };
-  }
+    }
 
   private dispatch(event: Events, result?: any): void {
     this.eventTarget.dispatchEvent(new RuntimeEvent(event, result));
@@ -119,52 +122,42 @@ class TranSpeech implements ITranSpeech {
     this.eventTarget.addEventListener(event, handler, options);
   }
 
+  private throw(error: RuntimeError) {
+    if (!this.silent) {
+      error.throw();
+    }
+  }
+
   private detectFeatures(features: AvailableFeatures): boolean {
     const availableFeatures = TranSpeech.availableFeatures;
 
-    if (features.fetch && !availableFeatures.fetch) {
-      if (!this.silent) {
-        Errors.NotSupportFetch.throw();
+    if (features.translation) {
+      if (availableFeatures.translation) {
+        this.fetch = (self.fetch as () => Promise<Response>).bind(self)
+      } else {
+        this.throw(Errors.NotSupportFetch);
+        return false;
       }
-      return false;
-    } else if (availableFeatures.fetch) {
-      this.fetch = (availableFeatures.fetch as () => Promise<Response>).bind(self as Window);
     }
 
-    if (features.mediaDevices && !availableFeatures.mediaDevices) {
-      if (!this.silent) {
-        Errors.NotSupportMedia.throw();
+    if (features.synthesis) {
+      if (availableFeatures.synthesis) {
+        this.synthesizer = self.speechSynthesis as SpeechSynthesis;
+      } else {
+        this.throw(Errors.NotSupportSynthesis);
+        return false;
       }
-      return false;
-    } else if (availableFeatures.mediaDevices) {
-      this.mediaDevices = availableFeatures.mediaDevices as MediaDevices;
     }
 
-    if (features.permissions && !availableFeatures.permissions) {
-      if (!this.silent) {
-        Errors.NotSupportPermissions.throw();
+    if (features.recognition) {
+      if (availableFeatures.recognition) {
+        this.recognizer = new ((self.speechRecognition || self.webkitSpeechRecognition) as any)();
+        this.permissions = self.navigator?.permissions;
+        this.mediaDevices = self.navigator?.mediaDevices;
+      } else {
+        this.throw(Errors.NotSupportRecognition);
+        return false;
       }
-      return false;
-    } else if (availableFeatures.permissions) {
-      this.permissions = availableFeatures.permissions as Permissions;
-    }
-
-    if (features.recognition && !availableFeatures.recognition) {
-      if (!this.silent) {
-        Errors.NotSupportRecognition.throw();
-      }
-      return false;
-    } else if (availableFeatures.recognition) {
-      this.recognizer = new (availableFeatures.recognition as any)();
-    }
-
-    if (features.synthesis && !availableFeatures.synthesis) {
-      if (!this.silent) {
-        Errors.NotSupportSynthesis.throw();
-      }
-      return false;
-    } else if (availableFeatures.synthesis) {
-      this.synthesizer = availableFeatures.synthesis as SpeechSynthesis;
     }
 
     return true;
@@ -172,11 +165,13 @@ class TranSpeech implements ITranSpeech {
 
   public static get availableFeatures(): AvailableFeatures {
     return {
-      recognition: self.speechRecognition || self.webkitSpeechRecognition,
-      fetch: self.fetch,
-      synthesis: self.speechSynthesis,
-      mediaDevices: self.navigator?.mediaDevices,
-      permissions: self.navigator?.permissions,
+      recognition: !!(
+        (self.speechRecognition || self.webkitSpeechRecognition)
+        && self.navigator?.mediaDevices
+        && self.navigator?.permissions
+      ),
+      translation: !!self.fetch,
+      synthesis: !!self.speechSynthesis,
     };
   }
 

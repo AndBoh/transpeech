@@ -1,6 +1,8 @@
 const defaultFeatures = {
   recognition: true,
   synthesis: true,
+  translation: true,
+  silent: false,
 };
 
 const recognizerDefaults = {

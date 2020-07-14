@@ -56,10 +56,9 @@ class TranSpeech implements ITranSpeech {
     }
 
     if (features.recognition) {
-      this.recognizer = { 
-        ...this.recognizer,
-        ...recognizerDefaults,
-      };
+      this.recognizer.continuous = recognizerDefaults.continuous;
+      this.recognizer.interimResults = recognizerDefaults.interimResults;
+      this.recognizer.lang = recognizerDefaults.lang;
 
       this.recognizer.onresult = (event) => {
         const result = event.results[event.resultIndex];
@@ -68,6 +67,7 @@ class TranSpeech implements ITranSpeech {
         } else {
           this.partlyRecognized(result[0].transcript);
         }
+        this.isRecognitionActive = false;
       };
     }
 
@@ -78,7 +78,7 @@ class TranSpeech implements ITranSpeech {
             .then((voices) => {
               this.voices = voices;
               this.activeVoice = voices[0];
-              this.dispatch(Events.VoicesReady);
+              this.dispatch(Events.VoicesReady, this.voices);
               resolve();
             })
             .catch(() => {
@@ -94,7 +94,7 @@ class TranSpeech implements ITranSpeech {
           this.getPermissionStatus()
             .then((permissionStatus) => {
               this.permissionStatus = permissionStatus.state;
-              this.dispatch(Events.PermissionStatusReady);
+              this.dispatch(Events.PermissionStatusReady, this.permissionStatus);
             })
             .catch(() => {
               this.throw(Errors.NotSupportPermissions);
@@ -106,13 +106,13 @@ class TranSpeech implements ITranSpeech {
       })
     ])
     .then(() => {
-      this.dispatch(Events.Ready)
+      this.dispatch(Events.Ready);
     })
     .catch(() => {
       this.throw(Errors.InstanceNotCreated);
       return undefined;
     });
-    }
+  }
 
   private dispatch(event: Events, result?: any): void {
     this.eventTarget.dispatchEvent(new RuntimeEvent(event, result));
@@ -151,7 +151,7 @@ class TranSpeech implements ITranSpeech {
 
     if (features.recognition) {
       if (availableFeatures.recognition) {
-        this.recognizer = new ((self.speechRecognition || self.webkitSpeechRecognition) as any)();
+        this.recognizer = new ((self.webkitSpeechRecognition || self.speechRecognition) as any)();
         this.permissions = self.navigator?.permissions;
         this.mediaDevices = self.navigator?.mediaDevices;
       } else {
@@ -207,12 +207,11 @@ class TranSpeech implements ITranSpeech {
   ): Promise<MediaStream> {
     try {
       this.mediaStream = await this.mediaDevices.getUserMedia(request);
-      this.getPermissionStatus();
+      this.permissionStatus = (await this.getPermissionStatus()).state;
       return this.mediaStream;
     } catch (e) {
-      if (!this.silent) {
-        Errors.PermissionDeclined.throw();
-      }
+      this.permissionStatus = 'denied';
+      this.throw(Errors.PermissionDeclined);
     }
   }
 
@@ -230,11 +229,9 @@ class TranSpeech implements ITranSpeech {
     }
 
     if (!voice) {
-      if (!this.silent) {
-        Errors.WrongVoice.throw();
-        if (!(self as Window).navigator.onLine) {
-          Errors.DueToOffline.throw();
-        }
+      this.throw(Errors.WrongVoice);
+      if (!(self as Window).navigator.onLine) {
+        this.throw(Errors.DueToOffline);
       }
     }
 
@@ -262,22 +259,16 @@ class TranSpeech implements ITranSpeech {
 
   public async translate(text: string, lang: string): Promise<string | false> {
     if (!text) {
-      if (!this.silent) {
-        Errors.NothingToTranslate.throw();
-      }
+      this.throw(Errors.NothingToTranslate);
       return false;
     }
     if (!lang) {
-      if (!this.silent) {
-        Errors.WrongLanguage.throw();
-      }
+      this.throw(Errors.WrongLanguage);
       return false;
     }
     if (!(self as Window).navigator.onLine) {
-      if (!this.silent) {
-        Errors.TranslationUnavilable.throw();
-        Errors.DueToOffline.throw();
-      }
+      this.throw(Errors.TranslationUnavilable);
+      this.throw(Errors.DueToOffline);
       return false;
     }
 
@@ -292,54 +283,42 @@ class TranSpeech implements ITranSpeech {
       const response = await this.fetch(url);
 
       if (!response.ok) {
-        if (!this.silent) {
-          Errors.TranslationError.throw();
-        }
+        this.throw(Errors.TranslationError);
         return false;
       }
 
       const translatedText = await response.json();
 
       if (!translatedText[0]) {
-        if (!this.silent) {
-          Errors.NothingToTranslate.throw();
-        }
+        this.throw(Errors.NothingToTranslate);
         return false;
       }
 
       return translatedText[0][0][0];
     } catch (e) {
-      if (!this.silent) {
-        Errors.TranslationError.throw();
-      }
+      this.throw(Errors.TranslationError);
       return false;
     }
   }
 
   public startRecognition(): void {
     if (this.permissionStatus !== 'granted') {
-      if (!this.silent) {
-        Errors.PermissionDeclined.throw();
-      }
+      this.throw(Errors.PermissionDeclined);
       return;
     }
 
-    if (this.isRecognitionActive) {
-      if (!this.silent) {
-        Errors.RecognitionActive.throw();
-      }
-      return;
+    try {
+      this.isRecognitionActive = true;
+      this.recognizer.start();
+    } catch (error) {
+      this.throw(Errors.RecognitionActive);
     }
-
-    this.isRecognitionActive = true;
-    this.recognizer.start();
+    
   }
 
   public stopRecognition(): void {
-    if (this.isRecognitionActive) {
-      this.isRecognitionActive = false;
-      this.recognizer.stop();
-    }
+    this.isRecognitionActive = false;
+    this.recognizer.stop();
   }
 
   private partlyRecognized(result: string): void {
@@ -348,6 +327,10 @@ class TranSpeech implements ITranSpeech {
 
   private fullyRecognized(result: string): void {
     this.dispatch(Events.FullyRecognized, result);
+
+    if (!this.recognizer.continuous) {
+      this.isRecognitionActive = false;
+    }
   }
 }
 
